@@ -115,7 +115,7 @@ pessoa <- trajectory("pessoa") %>%
 
 env <- simmer("hospital") 
 env %>%
-  add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(40*10, 1/(40/60)))) %>% 
+  add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(40*10, 40/60))) %>% 
   add_resource("administrador", 2)
 pessoa
 ```
@@ -129,14 +129,7 @@ env %>%
 
 env %>% get_mon_arrivals(ongoing = T) -> arrivals
 arrivals
-env %>% get_mon_resources()
-#env %>% get_mon_attributes() %>% head()
+env %>% get_
 ```
 
-```{r}
-# density plot arrival times
-arrivals %>% 
-  ggplot( aes(x = start_time)) +
-  geom_density()
-```
 
