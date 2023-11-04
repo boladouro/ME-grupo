@@ -80,31 +80,63 @@ tipo_de_contacto.APP <- 2
 tipos_de_contacto <- c(tipo_de_contacto.TELEFONE, tipo_de_contacto.APP)
 tipos_de_contacto.probs <- c(0.85, 0.15)
 
+tempo_atendido <- function() {
+  mean_time_triagem <- rnorm(1, mean = 4, sd = 1)
+  mean_time_decision <- rnorm(1, mean = 1, sd = 0.25)
+  time_to_timeout <- mean_time_triagem + mean_time_decision
+  
+  if (get_attribute(env, "tipo_de_consulta") != tipo_de_consulta.NAO_AGENDADA) {
+    time_to_timeout <- time_to_timeout + rnorm(1, mean = 1, sd = 0.25)
+  }
+  
+  return(time_to_timeout)
+}
+
 pessoa <- trajectory("pessoa") %>%
   set_attribute("times_phone_rejected", 0) %>% 
   set_attribute("tipo_de_consulta", \() sample(tipos_de_consulta, 1, prob = tipos_de_consulta.probs)) %>%
   set_attribute("tipo_de_contacto", \() sample(tipos_de_contacto, 1, prob = tipos_de_contacto.probs), tag = "contacto") %>%
   set_prioritization(\() if (get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA) c(1, -1, TRUE) else c(0 , -1, TRUE)) %>% # PRIORITY, DROP PRIORITY, RESTART
+  
+  # log_(\() paste("Vou pra fila agora, estou a usar", ifelse(get_attribute(env, "tipo_de_contacto") == tipo_de_contacto.TELEFONE, "o telefone", "a app"))) %>%
   renege_in(\() ifelse(get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA, 5, Inf), out = 
               trajectory("pessoa_try_again") %>% 
               set_attribute("times_phone_rejected", \() get_attribute(env, "times_phone_rejected") + 1) %>% 
-              rollback(target="contacto") # se nao funcionar mudar pra numero
+              # log_(\() "Nao fui atendido, vou voltar pra fila") %>% 
+              rollback(target="contacto", times = 0) # se nao funcionar mudar pra numero
             ) %>%
-  visit("server", \() rnorm(1, mean = 4, sd = 1) + rnorm(1, mean = 1, sd = 0.25) + ifelse(get_attribute(env,"tipo_de_consulta") != tipo_de_consulta.NAO_AGENDADA, rnorm(1, mean = 1, sd = 0.25), 0))
+  seize("administrador", 1) %>%
+  renege_abort() %>%
+  # log_(\() paste("Before timeout")) %>% 
+  timeout(tempo_atendido) %>% 
+  # log_(\() "After timeout") %>% 
+  release("administrador", 1)
+  # log_(\() "Leaving")
+
+env <- simmer("hospital") 
+env %>%
+  add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(40*10, 1/(40/60)))) %>% 
+  add_resource("administrador", 2)
 pessoa
 ```
 
 
 ```{r}
 set.seed(1)
-env <- simmer("hospital")
 env %>% 
-  add_resource("server", 2) %>% 
-  add_generator("pessoa", pessoa, \() rexp(1, 1/40)) %>% #TODO ver isto
-  run(10)
-env %>% get_mon_arrivals() %>% head()
-env %>% get_mon_resources() %>% head()
-env %>% get_mon_attributes() %>% head()
+  reset() %>% 
+  run(24*60)
+
+env %>% get_mon_arrivals(ongoing = T) -> arrivals
+arrivals
+env %>% get_mon_resources()
+#env %>% get_mon_attributes() %>% head()
 ```
 
+```{r}
+# density plot arrival times
+arrivals %>% 
+  ggplot( aes(x = start_time)) +
+  geom_density()
+```
 
