@@ -1,0 +1,27 @@
+Package: ME-grupo
+Title: Trabalho de ME de grupo
+Version: 1.0
+Date: 2023-09-13
+Authors@R: 
+  person("André", "Plancha", , "Andre_Plancha@iscte-iul.pt", role = c("aut", "cre"),
+           comment = c(Numero = "105289"))
+Maintainer: Andre_Plancha@iscte-iul.pt
+Description: Trabalho de grupo de ME 
+License: All rights reserved
+Depends: 
+  R (>= 4.3.0)
+Encoding: UTF-8
+Imports: 
+    tidyverse (== 2.0.0),
+    here (== 1.0.1),
+    conflicted (== 1.2.0),
+    simmer (== 4.4.6.2),
+    simmer.bricks (== 0.2.2)
+Suggests:
+    rstudioapi (== 0.15.0),
+    evaluate (== 0.23),
+    markdown (== 1.11),
+    rmarkdown (== 2.25),
+    usethis (== 2.2.2)
+
+
