@@ -54,7 +54,9 @@ O objectivo deste estudo é optimizar a gestão dos contactos (tempo total do pr
 ```{r}
 library(simmer)
 library(simmer.bricks)
-conflicted::conflicts_prefer(simmer::rollback)
+conflicts_prefer(simmer::rollback)
+conflicts_prefer(simmer::now)
+conflicts_prefer(dplyr::select)
 # this will be substituted below and literally just is here because simmer doesn't know how to implement pipes and I hate it here
 env <- simmer("hospital") 
 ```
@@ -92,16 +94,22 @@ tempo_atendido <- function() {
   return(time_to_timeout)
 }
 
+intime <- function() {
+  now(env)%% 24*60 -> n
+  return(8*60 < n & n < 18*60)
+}
+
 pessoa <- trajectory("pessoa") %>%
   set_attribute("times_phone_rejected", 0) %>% 
   set_attribute("tipo_de_consulta", \() sample(tipos_de_consulta, 1, prob = tipos_de_consulta.probs)) %>%
   set_attribute("tipo_de_contacto", \() sample(tipos_de_contacto, 1, prob = tipos_de_contacto.probs), tag = "contacto") %>%
   set_prioritization(\() if (get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA) c(1, -1, TRUE) else c(0 , -1, TRUE)) %>% # PRIORITY, DROP PRIORITY, RESTART
-  
   # log_(\() paste("Vou pra fila agora, estou a usar", ifelse(get_attribute(env, "tipo_de_contacto") == tipo_de_contacto.TELEFONE, "o telefone", "a app"))) %>%
   renege_in(\() ifelse(get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA, 5, Inf), out = 
               trajectory("pessoa_try_again") %>% 
               set_attribute("times_phone_rejected", \() get_attribute(env, "times_phone_rejected") + 1) %>% 
+              # leave if out of schedule
+              leave(\() {ifelse(intime(), 0, 1)}) %>% 
               # log_(\() "Nao fui atendido, vou voltar pra fila") %>% 
               rollback(target="contacto", times = 0) # se nao funcionar mudar pra numero
             ) %>%
@@ -114,9 +122,12 @@ pessoa <- trajectory("pessoa") %>%
   # log_(\() "Leaving")
 
 env <- simmer("hospital") 
-env %>%
-  add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(40*10, 40/60))) %>% 
-  add_resource("administrador", 2)
+
+
+env %>% add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(1, 40/60), every = 24*60, arrive = F), mon = 2) -> env
+
+
+env %>% add_resource("administrador", schedule(c(8*60, 18*60), c(2, 0), period = 24*60)) -> env
 pessoa
 ```
 
@@ -125,11 +136,25 @@ pessoa
 set.seed(1)
 env %>% 
   reset() %>% 
-  run(24*60)
+  run(24*60*5)
 
 env %>% get_mon_arrivals(ongoing = T) -> arrivals
-arrivals
-env %>% get_
+env %>% get_mon_attributes() -> attributes
+env %>% get_mon_resources() -> resources
+```
+
+
+```{r}
+arrivals %>%
+  arrange(start_time) %>% 
+  select(-activity_time, -replication) %>% 
+  mutate(
+    day = ceiling(start_time/(24*60)),
+    start_time = start_time %% (24*60) %>% seconds_to_period(),
+    end_time = end_time %% (24*60) %>% seconds_to_period(),
+  ) -> arrivals.df
+arrivals.df %>% mutate(start_time = start_time %>% round(3), end_time = end_time %>% round(3)) %>% View
+
 ```
 
 
