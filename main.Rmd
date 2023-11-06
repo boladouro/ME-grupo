@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 ```{r}
-if (FALSE) {
+if (TRUE) {
   installPackagesNeeded()
 }
 ```
@@ -134,13 +134,21 @@ pessoa
 
 ```{r}
 set.seed(1)
-env %>% 
-  reset() %>% 
-  run(24*60*5)
 
-env %>% get_mon_arrivals(ongoing = T) -> arrivals
-env %>% get_mon_attributes() -> attributes
-env %>% get_mon_resources() -> resources
+
+
+envs <- lapply(1:50, function(i) {
+  env %>% 
+    run(24*60*5)
+  
+  
+})
+
+envs %>% simmer.plot::get_mon_arrivals(ongoing = T) -> arrivals
+envs %>% simmer.plot::get_mon_attributes() -> attributes
+envs %>% simmer.plot::get_mon_resources() -> resources
+
+
 ```
 
 
@@ -157,4 +165,14 @@ arrivals.df %>% mutate(start_time = start_time %>% round(3), end_time = end_time
 
 ```
 
+```{r}
+plot(simmer.plot::get_mon_arrivals(envs), metric="waiting_time")
+```
+
+```{r}
+plot(simmer.plot::get_mon_resources(envs), metric="usage", items = "server")
+```
+
+```{r}
+```
 
