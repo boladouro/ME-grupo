@@ -24,6 +24,8 @@ tryCatch({
   library(here)
   library(tidyverse)
   library(conflicted)
+  library(pak)
+  library(lubridate)
   conflicted::conflict_prefer("filter", "dplyr", c("base", "stats"))
 }, error = \(x) warning("Something went wrong, probably a package is not installed, do installPackagesNeeded()")
 )

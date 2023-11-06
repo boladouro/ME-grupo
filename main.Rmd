@@ -4,7 +4,7 @@ output: html_notebook
 ---
 
 ```{r}
-if (TRUE) {
+if (FALSE) {
   installPackagesNeeded()
 }
 ```
@@ -54,6 +54,7 @@ O objectivo deste estudo é optimizar a gestão dos contactos (tempo total do pr
 ```{r}
 library(simmer)
 library(simmer.bricks)
+library(simmer.plot)
 conflicts_prefer(simmer::rollback)
 conflicts_prefer(simmer::now)
 conflicts_prefer(dplyr::select)
@@ -98,7 +99,10 @@ intime <- function() {
   now(env)%% 24*60 -> n
   return(8*60 < n & n < 18*60)
 }
+```
 
+
+```{r}
 pessoa <- trajectory("pessoa") %>%
   set_attribute("times_phone_rejected", 0) %>% 
   set_attribute("tipo_de_consulta", \() sample(tipos_de_consulta, 1, prob = tipos_de_consulta.probs)) %>%
@@ -120,42 +124,39 @@ pessoa <- trajectory("pessoa") %>%
   # log_(\() "After timeout") %>% 
   release("administrador", 1)
   # log_(\() "Leaving")
-
-env <- simmer("hospital") 
-
-
-env %>% add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(1, 40/60), every = 24*60, arrive = F), mon = 2) -> env
-
-
-env %>% add_resource("administrador", schedule(c(8*60, 18*60), c(2, 0), period = 24*60)) -> env
 pessoa
 ```
 
 
 ```{r}
-set.seed(1)
+env <- simmer("hospital") 
+env %>% 
+  add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(1, 40/60), every = 24*60, arrive = F), mon = 2) %>% 
+  add_resource("administrador", schedule(c(8*60, 18*60), c(2, 0), period = 24*60))
+env
+```
 
 
-
+```{r}
+# 50 replicas
 envs <- lapply(1:50, function(i) {
-  env %>% 
-    run(24*60*5)
-  
-  
+  env %>% reset()
+  set.seed(i)
+  env %>% run(24*60*5)
 })
 
 envs %>% simmer.plot::get_mon_arrivals(ongoing = T) -> arrivals
 envs %>% simmer.plot::get_mon_attributes() -> attributes
 envs %>% simmer.plot::get_mon_resources() -> resources
 
-
+env <- envs[[1]]
 ```
 
 
 ```{r}
 arrivals %>%
   arrange(start_time) %>% 
-  select(-activity_time, -replication) %>% 
+  select(-activity_time) %>% 
   mutate(
     day = ceiling(start_time/(24*60)),
     start_time = start_time %% (24*60) %>% seconds_to_period(),
@@ -166,13 +167,91 @@ arrivals.df %>% mutate(start_time = start_time %>% round(3), end_time = end_time
 ```
 
 ```{r}
+# n sei pra q serve isto
 plot(simmer.plot::get_mon_arrivals(envs), metric="waiting_time")
-```
-
-```{r}
 plot(simmer.plot::get_mon_resources(envs), metric="usage", items = "server")
 ```
 
+
 ```{r}
+# test
+library(simmer)
+
+set.seed(42)
+
+env <- simmer("SuperDuperSim")
+env
+#> simmer environment: SuperDuperSim | now: 0 | next: 
+#> { Monitor: in memory }
+patient <- trajectory("patients' path") %>%
+  ## add an intake activity 
+  seize("nurse", 1) %>%
+  timeout(function() rnorm(1, 15)) %>%
+  release("nurse", 1) %>%
+  ## add a consultation activity
+  seize("doctor", 1) %>%
+  timeout(function() rnorm(1, 20)) %>%
+  release("doctor", 1) %>%
+  ## add a planning activity
+  seize("administration", 1) %>%
+  timeout(function() rnorm(1, 5)) %>%
+  release("administration", 1)
+
+env %>%
+  add_resource("nurse", 1) %>%
+  add_resource("doctor", 2) %>%
+  add_resource("administration", 1) %>%
+  add_generator("patient", patient, function() rnorm(1, 10, 2))
+#> simmer environment: SuperDuperSim | now: 0 | next: 0
+#> { Monitor: in memory }
+#> { Resource: nurse | monitored: TRUE | server status: 0(1) | queue status: 0(Inf) }
+#> { Resource: doctor | monitored: TRUE | server status: 0(2) | queue status: 0(Inf) }
+#> { Resource: administration | monitored: TRUE | server status: 0(1) | queue status: 0(Inf) }
+#> { Source: patient | monitored: 1 | n_generated: 0 }
+env %>% 
+  run(80) %>% 
+  now()
+#> [1] 80
+env %>% peek(3)
+#> [1] 80.69540 81.62105 81.62105
+env %>%
+  stepn() %>% # 1 step
+  print() %>%
+  stepn(3)    # 3 steps
+#> simmer environment: SuperDuperSim | now: 80.6953988949657 | next: 80.6953988949657
+#> { Monitor: in memory }
+#> { Resource: nurse | monitored: TRUE | server status: 1(1) | queue status: 1(Inf) }
+#> { Resource: doctor | monitored: TRUE | server status: 1(2) | queue status: 0(Inf) }
+#> { Resource: administration | monitored: TRUE | server status: 0(1) | queue status: 0(Inf) }
+#> { Source: patient | monitored: 1 | n_generated: 7 }
+#> simmer environment: SuperDuperSim | now: 81.6210531397386 | next: 81.6210531397386
+#> { Monitor: in memory }
+#> { Resource: nurse | monitored: TRUE | server status: 1(1) | queue status: 2(Inf) }
+#> { Resource: doctor | monitored: TRUE | server status: 1(2) | queue status: 0(Inf) }
+#> { Resource: administration | monitored: TRUE | server status: 0(1) | queue status: 0(Inf) }
+#> { Source: patient | monitored: 1 | n_generated: 7 }
+env %>% peek(Inf, verbose=TRUE)
+#>       time  process
+#> 1 81.62105  patient
+#> 2 86.74154 patient4
+#> 3 89.36934 patient3
+env %>% 
+  run(120) %>%
+  now()
+#> [1] 120
+envs <- lapply(1:100, function(i) {
+  simmer("SuperDuperSim") %>%
+    add_resource("nurse", 1) %>%
+    add_resource("doctor", 2) %>%
+    add_resource("administration", 1) %>%
+    add_generator("patient", patient, function() rnorm(1, 10, 2)) %>%
+    run(80)
+})
+```
+
+```{r}
+envs %>% simmer.plot::get_mon_arrivals(ongoing = T) -> arrivals
+arrivals %>%
+  arrange(start_time)
 ```
 

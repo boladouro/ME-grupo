@@ -16,7 +16,8 @@ Imports:
     here (== 1.0.1),
     conflicted (== 1.2.0),
     simmer (== 4.4.6.2),
-    simmer.bricks (== 0.2.2)
+    simmer.bricks (== 0.2.2),
+    simmer.plot (== 0.1.18)
 Suggests:
     rstudioapi (== 0.15.0),
     evaluate (== 0.23),
