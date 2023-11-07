@@ -129,20 +129,14 @@ pessoa
 
 
 ```{r}
-env <- simmer("hospital") 
-env %>% 
-  add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(1, 40/60), every = 24*60, arrive = F), mon = 2) %>% 
-  add_resource("administrador", schedule(c(8*60, 18*60), c(2, 0), period = 24*60))
-env
-```
-
-
-```{r}
+set.seed(1)
 # 50 replicas
 envs <- lapply(1:50, function(i) {
-  env %>% reset()
-  set.seed(i)
-  env %>% run(24*60*5)
+  env <- simmer("hospital") 
+  env %>% 
+    add_generator("pessoa", pessoa, from_to(8*60, 18*60, \() rexp(1, 40/60), every = 24*60, arrive = F), mon = 2) %>% 
+    add_resource("administrador", schedule(c(8*60, 18*60), c(2, 0), period = 24*60)) %>%
+    run(24*60*5)
 })
 
 envs %>% simmer.plot::get_mon_arrivals(ongoing = T) -> arrivals
