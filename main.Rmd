@@ -375,15 +375,15 @@ envs %>% simmer.plot::get_mon_resources() -> resources
 ```{r}
 # b)
 arrivals %>%
-  filter(replication == 1) %>%
+  filter(start_time != -1) %>% # n sei pq e q isto acontece
   arrange(start_time) %>% 
   select(-activity_time) %>% 
   mutate(
     day = ceiling(start_time/(24*60)),
-    start_time = start_time %% (24*60) %>% seconds_to_period(),
-    end_time = end_time %% (24*60) %>% seconds_to_period(),
-  ) -> arrivals.df
-arrivals.df %>% mutate(start_time = start_time %>% round(3), end_time = end_time %>% round(3))
+    start_time_day = start_time %% (24*60) %>% seconds_to_period(),
+    end_time_day = end_time %% (24*60) %>% seconds_to_period(),
+  ) -> arrivals.df1
+arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
 ```
 
 ```{r}
@@ -420,13 +420,14 @@ envs %>% simmer.plot::get_mon_resources() -> resources
 
 ```{r}
 arrivals %>%
+  filter(start_time != -1) %>% # n sei pq e q isto acontece
   arrange(start_time) %>% 
   select(-activity_time) %>% 
   mutate(
     day = ceiling(start_time/(24*60)),
-    start_time = start_time %% (24*60) %>% seconds_to_period(),
-    end_time = end_time %% (24*60) %>% seconds_to_period(),
-  ) -> arrivals.df
-arrivals.df %>% mutate(start_time = start_time %>% round(3), end_time = end_time %>% round(3))
+    start_time_day = start_time %% (24*60) %>% seconds_to_period(),
+    end_time_day = end_time %% (24*60) %>% seconds_to_period(),
+  ) -> arrivals.df1
+arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
 ```
 
