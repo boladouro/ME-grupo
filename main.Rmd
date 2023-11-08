@@ -108,7 +108,7 @@ pessoa <- trajectory("pessoa") %>%
   # set_attribute("phone_rejected", 0) %>%
   set_attribute("tipo_de_consulta", \() sample(tipos_de_consulta, 1, prob = tipos_de_consulta.probs)) %>%
   set_attribute("tipo_de_contacto", \() sample(tipos_de_contacto, 1, prob = tipos_de_contacto.probs), tag = "contacto") %>%
-  set_prioritization(\() if (get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA) c(1, -1, FALSE) else c(0 , -1, FALSE)) %>% # PRIORITY, DROP PRIORITY, RESTART
+  set_prioritization(\() if (get_attribute(env, "tipo_de_contacto") == tipo_de_contacto.TELEFONE) c(1, -1, FALSE) else c(0 , -1, FALSE)) %>% # PRIORITY, DROP PRIORITY, RESTART
   # log_(\() paste("Vou pra fila agora, estou a usar", ifelse(get_attribute(env, "tipo_de_contacto") == tipo_de_contacto.TELEFONE, "o telefone", "a app"))) %>%
   renege_in(\() ifelse(get_attribute(env, "tipo_de_contacto") == tipo_de_contacto.TELEFONE, 5, Inf), out = 
               trajectory() %>% set_attribute("phone_rejected", 1)
@@ -213,6 +213,18 @@ resources %>%
   facet_wrap(vars(day), scale = "free") +
   theme(legend.position = "none")
 
+resources %>% 
+  mutate(day = ceiling(time/(24*60))) %>% 
+  group_by(replication) %>%
+  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  mutate(replication = replication %>% as_factor()) %>% 
+  ggplot(aes(x = time, y = queue_size)) +
+  geom_step(aes(color = replication), alpha = 0.3) + 
+  geom_smooth(method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  ylim(0,250)
+  
 
 ```
 
@@ -243,7 +255,7 @@ attributrs.lj %>%
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
   theme(legend.position = "none") +
-  ylim(0, 700)
+  ylim(0,875)
   
 attributrs.lj %>% 
   filter(key == "phone_rejected") %>% 
@@ -300,39 +312,26 @@ attributrs.lj %>%
 ```{r}
 # tempo de espera daqueles que concluiram, speardao por chamada e mensagem
 arrivals %>% 
-  filter(finished == T) %>% 
+  filter(finished == TRUE) %>% 
   mutate(waiting_time = end_time - start_time) %>% 
   left_join(attributes %>% filter(key == "tipo_de_contacto"), by = c("name", "replication")) %>% 
-  mutate(tipo_de_contacto = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "mensagem") %>% as_factor) %>% 
+  mutate(tipo_de_contacto = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "mensagem") %>% as_factor, replication = replication %>% as_factor) %>% 
   select(name, replication, waiting_time, tipo_de_contacto) -> waiting_times
 
-# histograma
+# histograma (n tou a perceber pq é q há waiting times maiores que 5)
 waiting_times %>% 
-  ggplot(aes(x = waiting_time, after_stat(density))) +
-  geom_histogram(aes(fill = tipo_de_contacto), position = "identity", alpha = 0.5, bins = 100) +
-  facet_wrap(vars(tipo_de_contacto)) +
-  theme(legend.position = "none")
-waiting_times %>% 
-  ggplot(aes(x = waiting_time, after_stat(density))) +
-  geom_histogram(aes(fill = tipo_de_contacto), position = "identity", alpha = 0.5, bins = 100) +
-  facet_wrap(vars(tipo_de_contacto)) +
-  theme(legend.position = "none") +
-  xlim(4, 15)
-
-# sem densidade
-waiting_times %>% 
+  filter(tipo_de_contacto == "telefone") %>%
   ggplot(aes(x = waiting_time)) +
-  geom_histogram(aes(fill = tipo_de_contacto), position = "identity", alpha = 0.5, bins = 100) +
-  facet_wrap(vars(tipo_de_contacto)) +
+  geom_histogram(bins = 100) +
   theme(legend.position = "none")
-waiting_times %>%
-  ggplot(aes(x = waiting_time)) +
-  geom_histogram(aes(fill = tipo_de_contacto), position = "identity", alpha = 0.5, bins = 100) +
-  facet_wrap(vars(tipo_de_contacto)) +
-  theme(legend.position = "none") +
-  xlim(4, 15)
 
+waiting_times %>% 
+  filter(tipo_de_contacto == "mensagem") %>%
+  ggplot(aes(x = waiting_time)) +
+  geom_histogram(bins = 100) +
+  theme(legend.position = "none")
 ```
+
 
 ```{r}
 # regular waiting time stats without graphs
