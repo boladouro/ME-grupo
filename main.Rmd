@@ -174,14 +174,29 @@ attributrs.lj
 
 
 ```{r}
-# n diz nada
+# percentagem de chamadas perdidas
 attributrs.lj %>% 
-  filter(key == "phone_rejected") %>% 
-  group_by(replication, day) %>%
-  summarise(value = sum(value)) %>% 
-  # boxplot per day
-  ggplot(aes(x = factor(day), y = value)) +
-  geom_boxplot()
+  filter(key == "tipo_de_contacto", value == tipo_de_contacto.TELEFONE) %>% 
+  left_join(attributrs.lj %>% filter(key == "phone_rejected") %>% mutate(gave_up = key) %>% select(name, replication, gave_up), join_by("name", "replication")) %>% 
+  mutate(gave_up = if_else(gave_up %>% is.na, T, F), replication = replication %>% as_factor) %>% 
+  select(name, replication, end_time, end_time_day, gave_up) -> phone_calls
+phone_calls
+```
+
+```{r}
+# phone_calls rate per replication
+phone_calls %>% 
+  group_by(replication) %>% 
+  summarise(phone_calls = n(), gave_up = sum(gave_up)) %>% 
+  mutate(phone_calls_per_hour = phone_calls/10, gave_up_rate = gave_up/phone_calls) %>% 
+  arrange(desc(gave_up_rate)) -> phone_calls_rate
+phone_calls_rate
+
+phone_calls_rate %>% 
+  ggplot(aes(x = reorder(replication, gave_up_rate), y = gave_up_rate)) +
+  geom_col() + 
+  ylim(0, 1)
+
 ```
 
 
@@ -391,7 +406,7 @@ arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %
 pessoa__ <- join(
   pessoa[1:2], 
   trajectory("change_prio") %>% 
-     set_prioritization(\() if (get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA) c(1, 1, FALSE) else c(0 , 0, FALSE)),
+     set_prioritization(\() if (get_attribute(env, "tipo_de_contacto") == tipo_de_contacto.TELEFONE) c(1, 1, FALSE) else c(0 , 0, FALSE)),
   pessoa[-(1:3)]
 )
 pessoa__
@@ -427,7 +442,16 @@ arrivals %>%
     day = ceiling(start_time/(24*60)),
     start_time_day = start_time %% (24*60) %>% seconds_to_period(),
     end_time_day = end_time %% (24*60) %>% seconds_to_period(),
-  ) -> arrivals.df1
-arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
+  ) -> arrivals.df2a
+arrivals.df2a %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3)) 
+```
+
+```{r}
+# analise de eficiencia
+attributes %>% 
+  left_join(arrivals.df2a, by = c("name", "replication") ) %>% 
+  select(name, key, value, replication, day, end_time, end_time_day) -> atributes.df2a
+atributes.df2a %>% 
+  filter(key == "phone_rejected")
 ```
 
