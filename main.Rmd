@@ -9,6 +9,7 @@ if (FALSE) {
 }
 ```
 
+
 ## Processo
 
 Um paciente que está em lista de espera para ser operado:
@@ -195,8 +196,24 @@ phone_calls_rate
 phone_calls_rate %>% 
   ggplot(aes(x = reorder(replication, gave_up_rate), y = gave_up_rate)) +
   geom_col() + 
-  ylim(0, 1)
+  ylim(0, 1) +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  geom_hline(aes(yintercept = min(gave_up_rate)), linetype = "dashed", color = "red") +
+  geom_hline(aes(yintercept = max(gave_up_rate)), linetype = "dashed", color = "blue") +
+  xlab("Replication") + 
+  ylab("Gave up rate")
 
+ggsave("gave_up_rate.svg")
+```
+
+
+```{r}
+phone_calls_rate %>% 
+  summarise(
+    min = min(phone_calls_per_hour), 
+    mean = mean(phone_calls_per_hour), 
+    max = max(phone_calls_per_hour)
+    )
 ```
 
 
