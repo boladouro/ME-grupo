@@ -105,11 +105,13 @@ intime <- function() {
 ```{r}
 pessoa <- trajectory("pessoa") %>%
   # set_attribute("times_phone_rejected", 0) %>% 
+  # set_attribute("phone_rejected", 0) %>%
   set_attribute("tipo_de_consulta", \() sample(tipos_de_consulta, 1, prob = tipos_de_consulta.probs)) %>%
   set_attribute("tipo_de_contacto", \() sample(tipos_de_contacto, 1, prob = tipos_de_contacto.probs), tag = "contacto") %>%
   set_prioritization(\() if (get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA) c(1, -1, FALSE) else c(0 , -1, FALSE)) %>% # PRIORITY, DROP PRIORITY, RESTART
   # log_(\() paste("Vou pra fila agora, estou a usar", ifelse(get_attribute(env, "tipo_de_contacto") == tipo_de_contacto.TELEFONE, "o telefone", "a app"))) %>%
   renege_in(\() ifelse(get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA, 5, Inf), out = 
+              trajectory() %>% set_attribute("phone_rejected", 1)
               # O botas não gostou
               # trajectory("pessoa_try_again") %>% 
               # set_attribute("times_phone_rejected", \() get_attribute(env, "times_phone_rejected") + 1) %>% 
@@ -125,6 +127,7 @@ pessoa <- trajectory("pessoa") %>%
   # log_(\() "After timeout") %>% 
   release("administrador", 1)
   # log_(\() "Leaving")
+
 pessoa
 ```
 
@@ -148,23 +151,77 @@ envs %>% simmer.plot::get_mon_resources() -> resources
 
 ```{r}
 arrivals %>%
-  filter(replication == 1) %>% 
+  filter(start_time != -1) %>% # n sei pq e q isto acontece
   arrange(start_time) %>% 
   select(-activity_time) %>% 
   mutate(
     day = ceiling(start_time/(24*60)),
-    start_time = start_time %% (24*60) %>% seconds_to_period(),
-    end_time = end_time %% (24*60) %>% seconds_to_period(),
-  ) -> arrivals.df
-arrivals.df %>% mutate(start_time = start_time %>% round(3), end_time = end_time %>% round(3))
-
+    start_time_day = start_time %% (24*60) %>% seconds_to_period(),
+    end_time_day = end_time %% (24*60) %>% seconds_to_period(),
+  ) -> arrivals.df1
+arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
 ```
 
 ```{r}
-# n sei pra q serve isto
-plot(simmer.plot::get_mon_arrivals(envs), metric="waiting_time")
-plot(simmer.plot::get_mon_resources(envs), metric="usage", items = "server")
+# analise de eficiencia
+# numero de chamadas perdidas
+# add day to atributes from arrivals.df1
+attributes %>% 
+  left_join(arrivals.df1 %>% select(name, replication, day, end_time, end_time_day), by = c("name", "replication")) %>% 
+  select(-time) -> attributrs.lj
+attributrs.lj 
 ```
+
+
+```{r}
+# n diz nada
+attributrs.lj %>% 
+  filter(key == "phone_rejected") %>% 
+  group_by(replication, day) %>%
+  summarise(value = sum(value)) %>% 
+  # boxplot per day
+  ggplot(aes(x = factor(day), y = value)) +
+  geom_boxplot()
+```
+
+
+```{r}
+# evolucao ao longo do dia
+attributrs.lj %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+# get queue size histogram
+resources %>% 
+  mutate(day = ceiling(time/(24*60))) %>% 
+  group_by(replication) %>%
+  reframe(day = day, time = time, queue_size = queue) %>% 
+  ggplot(aes(x = time, y = queue_size)) +
+  geom_step(aes(color = replication), alpha = 0.3) 
+
+  
+
+  
+
+  
+```
+
+```{r}
+resources %>% plot(metric = "utilization")
+resources %>% plot(metric = "usage", steps = T)
+
+```
+
 
 ```{r}
 # mudanças
