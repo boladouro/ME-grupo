@@ -256,7 +256,7 @@ attributes.df1 %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time/60/60, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -301,7 +301,7 @@ attributes.df1 %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -327,7 +327,7 @@ attributes.df1 %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -353,7 +353,7 @@ attributes.df1 %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
 
@@ -543,7 +543,7 @@ attributes.df2b %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -586,7 +586,7 @@ attributes.df2b %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -612,7 +612,7 @@ attributes.df2b %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -638,7 +638,7 @@ attributes.df2b %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
 
@@ -831,7 +831,7 @@ attributes.df2a %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -874,7 +874,7 @@ attributes.df2a %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -900,7 +900,7 @@ attributes.df2a %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -926,7 +926,7 @@ attributes.df2a %>%
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
   reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
 
