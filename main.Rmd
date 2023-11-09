@@ -256,8 +256,8 @@ attributes.df1 %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
-  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  reframe(time_rejected = pessoa_end_time/60/60, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected, y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
   facet_wrap(vars(day), scale = "free") +
@@ -300,7 +300,7 @@ attributes.df1 %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -326,7 +326,7 @@ attributes.df1 %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -352,7 +352,7 @@ attributes.df1 %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -396,7 +396,7 @@ waiting_times %>%
 
 waiting_times %>% 
   filter(contacto == "app") %>%
-  ggplot(aes(x = time_waiting)) +
+  ggplot(aes(x = time_waiting/60)) +
   geom_histogram(bins = 100) +
   theme(legend.position = "none")
 ```
@@ -542,7 +542,7 @@ attributes.df2b %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -585,7 +585,7 @@ attributes.df2b %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -611,7 +611,7 @@ attributes.df2b %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -637,7 +637,7 @@ attributes.df2b %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -682,7 +682,7 @@ waiting_times %>%
 
 waiting_times %>% 
   filter(contacto == "app") %>%
-  ggplot(aes(x = time_waiting)) +
+  ggplot(aes(x = time_waiting/60)) +
   geom_histogram(bins = 100) +
   theme(legend.position = "none")
 ```
@@ -830,7 +830,7 @@ attributes.df2a %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -873,7 +873,7 @@ attributes.df2a %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -899,7 +899,7 @@ attributes.df2a %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -925,7 +925,7 @@ attributes.df2a %>%
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time/60, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -970,7 +970,7 @@ waiting_times %>%
 
 waiting_times %>% 
   filter(contacto == "app") %>%
-  ggplot(aes(x = time_waiting)) +
+  ggplot(aes(x = time_waiting/60)) +
   geom_histogram(bins = 100) +
   theme(legend.position = "none")
 ```
