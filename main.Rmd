@@ -270,7 +270,7 @@ attributes.df1 %>%
 resources %>% 
   mutate(day = ceiling(time/(24*60))) %>% 
   group_by(replication) %>%
-  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
   mutate(replication = replication %>% as_factor()) %>% 
   ggplot(aes(x = time, y = queue_size)) +
   geom_step(aes(color = replication), alpha = 0.3) + 
@@ -281,7 +281,7 @@ resources %>%
 resources %>% 
   mutate(day = ceiling(time/(24*60))) %>% 
   group_by(replication) %>%
-  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
   mutate(replication = replication %>% as_factor()) %>% 
   ggplot(aes(x = time, y = queue_size)) +
   geom_step(aes(color = replication), alpha = 0.3) + 
@@ -309,13 +309,13 @@ attributes.df1 %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
@@ -335,13 +335,13 @@ attributes.df1 %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
@@ -361,13 +361,13 @@ attributes.df1 %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
 
@@ -556,7 +556,7 @@ attributes.df2b %>%
 resources %>% 
   mutate(day = ceiling(time/(24*60))) %>% 
   group_by(replication) %>%
-  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
   mutate(replication = replication %>% as_factor()) %>% 
   ggplot(aes(x = time, y = queue_size)) +
   geom_step(aes(color = replication), alpha = 0.3) + 
@@ -567,7 +567,7 @@ resources %>%
 resources %>% 
   mutate(day = ceiling(time/(24*60))) %>% 
   group_by(replication) %>%
-  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
   mutate(replication = replication %>% as_factor()) %>% 
   ggplot(aes(x = time, y = queue_size)) +
   geom_step(aes(color = replication), alpha = 0.3) + 
@@ -594,13 +594,13 @@ attributes.df2b %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
@@ -620,13 +620,13 @@ attributes.df2b %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
@@ -646,13 +646,13 @@ attributes.df2b %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
 
@@ -844,7 +844,7 @@ attributes.df2a %>%
 resources %>% 
   mutate(day = ceiling(time/(24*60))) %>% 
   group_by(replication) %>%
-  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
   mutate(replication = replication %>% as_factor()) %>% 
   ggplot(aes(x = time, y = queue_size)) +
   geom_step(aes(color = replication), alpha = 0.3) + 
@@ -855,7 +855,7 @@ resources %>%
 resources %>% 
   mutate(day = ceiling(time/(24*60))) %>% 
   group_by(replication) %>%
-  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
   mutate(replication = replication %>% as_factor()) %>% 
   ggplot(aes(x = time, y = queue_size)) +
   geom_step(aes(color = replication), alpha = 0.3) + 
@@ -882,13 +882,13 @@ attributes.df2a %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
@@ -908,13 +908,13 @@ attributes.df2a %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
@@ -934,13 +934,13 @@ attributes.df2a %>%
   geom_step(data = resources %>% 
               mutate(day = ceiling(time/(24*60))) %>% 
               group_by(replication) %>%
-              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
               mutate(replication = replication %>% as_factor()), 
             aes(x = time, y = queue_size), alpha = 0.3) + 
   geom_smooth(data = resources %>% 
                 mutate(day = ceiling(time/(24*60))) %>% 
                 group_by(replication) %>%
-                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
 
