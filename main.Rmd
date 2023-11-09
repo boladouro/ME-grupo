@@ -418,7 +418,9 @@ resources %>% plot(metric = "utilization")
 resources %>% plot(metric = "usage", steps = T)
 
 ```
+## Pergunta 2 
 
+Alíneas com mudanças relativas às interrupções
 
 ```{r}
 # mudanças
