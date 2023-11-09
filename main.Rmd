@@ -677,7 +677,8 @@ waiting_times %>%
   filter(contacto == "telefone") %>%
   ggplot(aes(x = time_waiting)) +
   geom_histogram(bins = 100) +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+
+  ylim(0, 1000)
 
 waiting_times %>% 
   filter(contacto == "app") %>%
@@ -964,7 +965,8 @@ waiting_times %>%
   filter(contacto == "telefone") %>%
   ggplot(aes(x = time_waiting)) +
   geom_histogram(bins = 100) +
-  theme(legend.position = "none")
+  theme(legend.position = "none")+ 
+  ylim(0, 1000)
 
 waiting_times %>% 
   filter(contacto == "app") %>%
@@ -989,3 +991,4 @@ waiting_times %>%
 resources %>% plot(metric = "utilization")
 resources %>% plot(metric = "usage", steps = T)
 ```
+
