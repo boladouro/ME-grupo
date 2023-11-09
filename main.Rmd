@@ -124,6 +124,7 @@ pessoa <- trajectory("pessoa") %>%
   seize("administrador", 1) %>%
   renege_abort() %>%
   # log_(\() paste("Before timeout")) %>% 
+  set_attribute("atendido", 1) %>% 
   timeout(tempo_atendido) %>% 
   # log_(\() "After timeout") %>% 
   release("administrador", 1)
@@ -144,13 +145,14 @@ envs <- lapply(1:50, function(i) {
     run(24*60*5)
 })
 
-envs %>% simmer.plot::get_mon_arrivals(ongoing = T) -> arrivals
+envs %>% simmer.plot::get_mon_arrivals(ongoing = T) -> arrivals 
 envs %>% simmer.plot::get_mon_attributes() -> attributes
 envs %>% simmer.plot::get_mon_resources() -> resources
 ```
 
 
 ```{r}
+
 arrivals %>%
   filter(start_time != -1) %>% # n sei pq e q isto acontece
   arrange(start_time) %>% 
@@ -159,8 +161,30 @@ arrivals %>%
     day = ceiling(start_time/(24*60)),
     start_time_day = start_time %% (24*60) %>% seconds_to_period(),
     end_time_day = end_time %% (24*60) %>% seconds_to_period(),
+    # replication = replication %>% as_factor(),
   ) -> arrivals.df1
-arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
+arrivals.df1 %>% filter(replication == 1) %>% mutate(start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
+
+
+
+# turn what's above into a function so it can be done for 2a and 2b
+# get_arrivals <- function(mon_attributes) {
+#   mon_attributes %>%
+#     filter(start_time != -1) %>% # n sei pq e q isto acontece
+#     arrange(start_time) %>% 
+#     select(-activity_time) %>% 
+#     mutate(
+#       day = ceiling(start_time/(24*60)),
+#       start_time_day = start_time %% (24*60) %>% seconds_to_period(),
+#       end_time_day = end_time %% (24*60) %>% seconds_to_period(),
+#       # replication = replication %>% as_factor(),
+#     )
+# }
+# 
+# pprint_arrivals <- function (arrivals.df1) {
+#   arrivals.df1 %>% filter(replication == 1) %>% mutate(start_time_day = start_time_day %>% round(3), end_time_day = # end_time_day %>% round(3))
+# }
+
 ```
 
 ```{r}
@@ -168,19 +192,29 @@ arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %
 # numero de chamadas perdidas
 # add day to atributes from arrivals.df1
 attributes %>% 
-  left_join(arrivals.df1 %>% select(name, replication, day, end_time, end_time_day), by = c("name", "replication")) %>% 
-  select(-time) -> attributrs.lj
-attributrs.lj 
+  left_join(arrivals.df1 %>% select(name, replication, day, start_time, end_time, end_time_day), by = c("name", "replication")) %>% 
+  rename(atribute_time = time, pessoa_start_time = start_time, pessoa_end_time = end_time) %>% 
+  select(atribute_time, name, key, value, replication, day, pessoa_start_time, pessoa_end_time) -> attributes.df1
+attributes.df1 
+```
+
+```{r}
+# pessoas e os seus tipos de chamada
+attributes.df1 %>% 
+  filter(key == "tipo_de_contacto") %>% 
+  select(name, replication, value) %>% 
+  mutate(value = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "app")) %>%
+  rename(contacto = value) -> contactos.df1
 ```
 
 
 ```{r}
 # percentagem de chamadas perdidas
-attributrs.lj %>% 
+attributes.df1 %>% 
   filter(key == "tipo_de_contacto", value == tipo_de_contacto.TELEFONE) %>% 
-  left_join(attributrs.lj %>% filter(key == "phone_rejected") %>% mutate(gave_up = key) %>% select(name, replication, gave_up), join_by("name", "replication")) %>% 
+  left_join(attributes.df1 %>% filter(key == "phone_rejected") %>% mutate(gave_up = key) %>% select(name, replication, gave_up), join_by("name", "replication")) %>% 
   mutate(gave_up = if_else(gave_up %>% is.na, T, F), replication = replication %>% as_factor) %>% 
-  select(name, replication, end_time, end_time_day, gave_up) -> phone_calls
+  select(name, replication, pessoa_end_time, gave_up) -> phone_calls
 phone_calls
 ```
 
@@ -206,7 +240,6 @@ phone_calls_rate %>%
 ggsave("gave_up_rate.svg")
 ```
 
-
 ```{r}
 phone_calls_rate %>% 
   summarise(
@@ -218,12 +251,12 @@ phone_calls_rate %>%
 
 
 ```{r}
-# evolucao ao longo do dia
-attributrs.lj %>% 
+# evolucao ao longo do dia DO QUE?
+attributes.df1 %>% 
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -263,11 +296,11 @@ resources %>%
 
 ```{r}
 # join these 2 plots
-attributrs.lj %>% 
+attributes.df1 %>% 
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -289,11 +322,11 @@ attributrs.lj %>%
   theme(legend.position = "none") +
   ylim(0,875)
   
-attributrs.lj %>% 
+attributes.df1 %>% 
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -315,11 +348,11 @@ attributrs.lj %>%
   theme(legend.position = "none")
 
 
-attributrs.lj %>% 
+attributes.df1 %>% 
   filter(key == "phone_rejected") %>% 
   mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
   group_by(replication) %>% 
-  reframe(time_rejected = end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
   ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
   geom_line(aes(color = replication), alpha = 0.3) +
   geom_smooth() +
@@ -343,23 +376,27 @@ attributrs.lj %>%
 
 ```{r}
 # tempo de espera daqueles que concluiram, speardao por chamada e mensagem
-arrivals %>% 
-  filter(finished == TRUE) %>% 
-  mutate(waiting_time = end_time - start_time) %>% 
-  left_join(attributes %>% filter(key == "tipo_de_contacto"), by = c("name", "replication")) %>% 
-  mutate(tipo_de_contacto = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "mensagem") %>% as_factor, replication = replication %>% as_factor) %>% 
-  select(name, replication, waiting_time, tipo_de_contacto) -> waiting_times
+attributes %>% 
+  filter(key == "atendido") %>% 
+  left_join(arrivals.df1 %>% select(start_time, name, replication), join_by("name", "replication")) %>% 
+  left_join(contactos.df1, join_by("name", "replication")) %>% 
+  mutate(time_waiting = time - start_time) %>% 
+  select(name, value, replication, time_waiting, contacto) -> waiting_times
+waiting_times
+```
 
+
+```{r}
 # histograma (n tou a perceber pq é q há waiting times maiores que 5)
 waiting_times %>% 
-  filter(tipo_de_contacto == "telefone") %>%
-  ggplot(aes(x = waiting_time)) +
+  filter(contacto == "telefone") %>%
+  ggplot(aes(x = time_waiting)) +
   geom_histogram(bins = 100) +
   theme(legend.position = "none")
 
 waiting_times %>% 
-  filter(tipo_de_contacto == "mensagem") %>%
-  ggplot(aes(x = waiting_time)) +
+  filter(contacto == "app") %>%
+  ggplot(aes(x = time_waiting)) +
   geom_histogram(bins = 100) +
   theme(legend.position = "none")
 ```
@@ -368,11 +405,11 @@ waiting_times %>%
 ```{r}
 # regular waiting time stats without graphs
 waiting_times %>% 
-  group_by(tipo_de_contacto) %>% 
-  summarise(mean = mean(waiting_time), sd = sd(waiting_time), median = median(waiting_time)) 
+  group_by(contacto) %>% 
+  summarise(mean = mean(time_waiting), sd = sd(time_waiting), median = median(time_waiting)) 
 waiting_times %>% 
-  group_by(tipo_de_contacto) %>% 
-  summarise(quantile_10 = quantile(waiting_time, 0.1), quantile_20 = quantile(waiting_time, 0.2), quantile_30 = quantile(waiting_time, 0.3), quantile_40 = quantile(waiting_time, 0.4), quantile_50 = quantile(waiting_time, 0.5), quantile_60 = quantile(waiting_time, 0.6), quantile_70 = quantile(waiting_time, 0.7), quantile_80 = quantile(waiting_time, 0.8), quantile_90 = quantile(waiting_time, 0.9), quantile_95 = quantile(waiting_time, 0.95), quantile_99 = quantile(waiting_time, 0.99))
+  group_by(contacto) %>% 
+  summarise(quantile_10 = quantile(time_waiting, 0.1), quantile_20 = quantile(time_waiting, 0.2), quantile_30 = quantile(time_waiting, 0.3), quantile_40 = quantile(time_waiting, 0.4), quantile_50 = quantile(time_waiting, 0.5), quantile_60 = quantile(time_waiting, 0.6), quantile_70 = quantile(time_waiting, 0.7), quantile_80 = quantile(time_waiting, 0.8), quantile_90 = quantile(time_waiting, 0.9), quantile_95 = quantile(time_waiting, 0.95), quantile_99 = quantile(time_waiting, 0.99))
 ```
 
 
@@ -414,9 +451,22 @@ arrivals %>%
     day = ceiling(start_time/(24*60)),
     start_time_day = start_time %% (24*60) %>% seconds_to_period(),
     end_time_day = end_time %% (24*60) %>% seconds_to_period(),
-  ) -> arrivals.df1
-arrivals.df1 %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
+    replication = replication %>% as_factor(),
+  ) -> arrivals.df2b
+arrivals.df2b %>% filter(replication == 1) %>% mutate(start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3))
 ```
+
+```{r}
+# tempo de espera daqueles que concluiram, speardao por chamada e mensagem
+arrivals.df2b %>% 
+  filter(finished == TRUE) %>% 
+  mutate(waiting_time = end_time - start_time) %>% 
+  left_join(attributes %>% filter(key == "tipo_de_contacto"), by = c("name", "replication")) %>% 
+  mutate(tipo_de_contacto = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "mensagem") %>% as_factor, replication = replication %>% as_factor) %>% 
+  select(name, replication, waiting_time, tipo_de_contacto) -> waiting_times.2b
+waiting_times.2b
+```
+
 
 ```{r}
 # a) set_prioritization(\() if (get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA) c(1, -1, FALSE) else c(0 , -1, FALSE))
@@ -459,8 +509,9 @@ arrivals %>%
     day = ceiling(start_time/(24*60)),
     start_time_day = start_time %% (24*60) %>% seconds_to_period(),
     end_time_day = end_time %% (24*60) %>% seconds_to_period(),
+    replication = replication %>% as_factor(),
   ) -> arrivals.df2a
-arrivals.df2a %>% filter(replication == 1) %>% mutate(replication = replication %>% as_factor(), start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3)) 
+arrivals.df2a %>% filter(replication == 1) %>% mutate(start_time_day = start_time_day %>% round(3), end_time_day = end_time_day %>% round(3)) 
 ```
 
 ```{r}

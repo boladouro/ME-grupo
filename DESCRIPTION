@@ -28,7 +28,8 @@ Imports:
     simmer.bricks (== 0.2.2),
     simmer.plot (== 0.1.18),
     pkgcache (== 2.2.0.1),
-    pkgdepends (== 0.6.0)
+    pkgdepends (== 0.6.0),
+    svglite (==2.1.2)
 Suggests:
     rstudioapi (== 0.15.0),
     evaluate (== 0.23),
