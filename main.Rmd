@@ -443,6 +443,8 @@ envs %>% simmer.plot::get_mon_attributes() -> attributes
 envs %>% simmer.plot::get_mon_resources() -> resources
 ```
 
+## 2.b)
+
 ```{r}
 # b)
 arrivals %>%
@@ -459,16 +461,249 @@ arrivals.df2b %>% filter(replication == 1) %>% mutate(start_time_day = start_tim
 ```
 
 ```{r}
+arrivals.df2b$replication <- as.integer(as.character(arrivals.df2b$replication))
+
 # tempo de espera daqueles que concluiram, speardao por chamada e mensagem
 arrivals.df2b %>% 
   filter(finished == TRUE) %>% 
   mutate(waiting_time = end_time - start_time) %>% 
   left_join(attributes %>% filter(key == "tipo_de_contacto"), by = c("name", "replication")) %>% 
-  mutate(tipo_de_contacto = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "mensagem") %>% as_factor, replication = replication %>% as_factor) %>% 
+  mutate(tipo_de_contacto = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "mensagem") %>% as_factor, replication = replication %>% as_factor) %>%
   select(name, replication, waiting_time, tipo_de_contacto) -> waiting_times.2b
 waiting_times.2b
 ```
 
+```{r}
+# analise de eficiencia
+# numero de chamadas perdidas
+# add day to atributes from arrivals.df2b
+attributes %>% 
+  left_join(arrivals.df2b %>% select(name, replication, day, start_time, end_time, end_time_day), by = c("name", "replication")) %>% 
+  rename(atribute_time = time, pessoa_start_time = start_time, pessoa_end_time = end_time) %>% 
+  select(atribute_time, name, key, value, replication, day, pessoa_start_time, pessoa_end_time) -> attributes.df2b
+attributes.df2b 
+```
+
+```{r}
+# pessoas e os seus tipos de chamada
+attributes.df2b %>% 
+  filter(key == "tipo_de_contacto") %>% 
+  select(name, replication, value) %>% 
+  mutate(value = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "app")) %>%
+  rename(contacto = value) -> contactos.df2b
+```
+
+
+```{r}
+# percentagem de chamadas perdidas
+attributes.df2b %>% 
+  filter(key == "tipo_de_contacto", value == tipo_de_contacto.TELEFONE) %>% 
+  left_join(attributes.df2b %>% filter(key == "phone_rejected") %>% mutate(gave_up = key) %>% select(name, replication, gave_up), join_by("name", "replication")) %>% 
+  mutate(gave_up = if_else(gave_up %>% is.na, T, F), replication = replication %>% as_factor) %>% 
+  select(name, replication, pessoa_end_time, gave_up) -> phone_calls
+phone_calls
+```
+
+```{r}
+# phone_calls rate per replication
+phone_calls %>% 
+  group_by(replication) %>% 
+  summarise(phone_calls = n(), gave_up = sum(gave_up)) %>% 
+  mutate(phone_calls_per_hour = phone_calls/10, gave_up_rate = gave_up/phone_calls) %>% 
+  arrange(desc(gave_up_rate)) -> phone_calls_rate
+phone_calls_rate
+
+phone_calls_rate %>% 
+  ggplot(aes(x = reorder(replication, gave_up_rate), y = gave_up_rate)) +
+  geom_col() + 
+  ylim(0, 1) +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  geom_hline(aes(yintercept = min(gave_up_rate)), linetype = "dashed", color = "red") +
+  geom_hline(aes(yintercept = max(gave_up_rate)), linetype = "dashed", color = "blue") +
+  xlab("Replication") + 
+  ylab("Gave up rate")
+
+ggsave("gave_up_rate.svg")
+```
+
+```{r}
+phone_calls_rate %>% 
+  summarise(
+    min = min(phone_calls_per_hour), 
+    mean = mean(phone_calls_per_hour), 
+    max = max(phone_calls_per_hour)
+    )
+```
+
+
+```{r}
+# evolucao ao longo do dia DO QUE?
+attributes.df2b %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+# get queue size histogram
+resources %>% 
+  mutate(day = ceiling(time/(24*60))) %>% 
+  group_by(replication) %>%
+  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  mutate(replication = replication %>% as_factor()) %>% 
+  ggplot(aes(x = time, y = queue_size)) +
+  geom_step(aes(color = replication), alpha = 0.3) + 
+  geom_smooth(method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none")
+
+resources %>% 
+  mutate(day = ceiling(time/(24*60))) %>% 
+  group_by(replication) %>%
+  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  mutate(replication = replication %>% as_factor()) %>% 
+  ggplot(aes(x = time, y = queue_size)) +
+  geom_step(aes(color = replication), alpha = 0.3) + 
+  geom_smooth(method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  ylim(0,250)
+  
+```
+
+
+```{r}
+# join these 2 plots
+attributes.df2b %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  geom_step(data = resources %>% 
+              mutate(day = ceiling(time/(24*60))) %>% 
+              group_by(replication) %>%
+              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              mutate(replication = replication %>% as_factor()), 
+            aes(x = time, y = queue_size), alpha = 0.3) + 
+  geom_smooth(data = resources %>% 
+                mutate(day = ceiling(time/(24*60))) %>% 
+                group_by(replication) %>%
+                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                mutate(replication = replication %>% as_factor()), 
+              aes(x = time, y = queue_size), method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  ylim(0,875)
+  
+attributes.df2b %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  geom_step(data = resources %>% 
+              mutate(day = ceiling(time/(24*60))) %>% 
+              group_by(replication) %>%
+              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              mutate(replication = replication %>% as_factor()), 
+            aes(x = time, y = queue_size), alpha = 0.3) + 
+  geom_smooth(data = resources %>% 
+                mutate(day = ceiling(time/(24*60))) %>% 
+                group_by(replication) %>%
+                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                mutate(replication = replication %>% as_factor()), 
+              aes(x = time, y = queue_size), method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none")
+
+
+attributes.df2b %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+
+  theme(legend.position = "none") +
+  geom_step(data = resources %>% 
+              mutate(day = ceiling(time/(24*60))) %>% 
+              group_by(replication) %>%
+              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              mutate(replication = replication %>% as_factor()), 
+            aes(x = time, y = queue_size), alpha = 0.3) + 
+  geom_smooth(data = resources %>% 
+                mutate(day = ceiling(time/(24*60))) %>% 
+                group_by(replication) %>%
+                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                mutate(replication = replication %>% as_factor()), 
+              aes(x = time, y = queue_size), method="lm") +
+
+  theme(legend.position = "none")
+```
+
+```{r}
+# tempo de espera daqueles que concluiram, speardao por chamada e mensagem
+attributes %>% 
+  filter(key == "atendido") %>% 
+  left_join(arrivals.df2b %>% select(start_time, name, replication), join_by("name", "replication")) %>% 
+  left_join(contactos.df2b, join_by("name", "replication")) %>% 
+  mutate(time_waiting = time - start_time) %>% 
+  select(name, value, replication, time_waiting, contacto) -> waiting_times
+waiting_times
+```
+
+
+```{r}
+# histograma (n tou a perceber pq é q há waiting times maiores que 5)
+waiting_times %>% 
+  filter(contacto == "telefone") %>%
+  ggplot(aes(x = time_waiting)) +
+  geom_histogram(bins = 100) +
+  theme(legend.position = "none")
+
+waiting_times %>% 
+  filter(contacto == "app") %>%
+  ggplot(aes(x = time_waiting)) +
+  geom_histogram(bins = 100) +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+# regular waiting time stats without graphs
+waiting_times %>% 
+  group_by(contacto) %>% 
+  summarise(mean = mean(time_waiting), sd = sd(time_waiting), median = median(time_waiting)) 
+waiting_times %>% 
+  group_by(contacto) %>% 
+  summarise(quantile_10 = quantile(time_waiting, 0.1), quantile_20 = quantile(time_waiting, 0.2), quantile_30 = quantile(time_waiting, 0.3), quantile_40 = quantile(time_waiting, 0.4), quantile_50 = quantile(time_waiting, 0.5), quantile_60 = quantile(time_waiting, 0.6), quantile_70 = quantile(time_waiting, 0.7), quantile_80 = quantile(time_waiting, 0.8), quantile_90 = quantile(time_waiting, 0.9), quantile_95 = quantile(time_waiting, 0.95), quantile_99 = quantile(time_waiting, 0.99))
+```
+
+
+```{r}
+resources %>% plot(metric = "utilization")
+resources %>% plot(metric = "usage", steps = T)
+```
+
+## 2.a) - - - - - - - - - - - -
 
 ```{r}
 # a) set_prioritization(\() if (get_attribute(env, "tipo_de_consulta") == tipo_de_consulta.TELEFONICA) c(1, -1, FALSE) else c(0 , -1, FALSE))
@@ -517,6 +752,8 @@ arrivals.df2a %>% filter(replication == 1) %>% mutate(start_time_day = start_tim
 ```
 
 ```{r}
+arrivals.df2a$replication <- as.integer(as.character(arrivals.df2a$replication))
+
 # analise de eficiencia
 attributes %>% 
   left_join(arrivals.df2a, by = c("name", "replication") ) %>% 
@@ -525,3 +762,230 @@ atributes.df2a %>%
   filter(key == "phone_rejected")
 ```
 
+```{r}
+# analise de eficiencia
+# numero de chamadas perdidas
+# add day to atributes from arrivals.df2a
+attributes %>% 
+  left_join(arrivals.df2a %>% select(name, replication, day, start_time, end_time, end_time_day), by = c("name", "replication")) %>% 
+  rename(atribute_time = time, pessoa_start_time = start_time, pessoa_end_time = end_time) %>% 
+  select(atribute_time, name, key, value, replication, day, pessoa_start_time, pessoa_end_time) -> attributes.df2a
+attributes.df2a 
+```
+
+```{r}
+# pessoas e os seus tipos de chamada
+attributes.df2a %>% 
+  filter(key == "tipo_de_contacto") %>% 
+  select(name, replication, value) %>% 
+  mutate(value = ifelse(value == tipo_de_contacto.TELEFONE, "telefone", "app")) %>%
+  rename(contacto = value) -> contactos.df2a
+```
+
+
+```{r}
+# percentagem de chamadas perdidas
+attributes.df2a %>% 
+  filter(key == "tipo_de_contacto", value == tipo_de_contacto.TELEFONE) %>% 
+  left_join(attributes.df2a %>% filter(key == "phone_rejected") %>% mutate(gave_up = key) %>% select(name, replication, gave_up), join_by("name", "replication")) %>% 
+  mutate(gave_up = if_else(gave_up %>% is.na, T, F), replication = replication %>% as_factor) %>% 
+  select(name, replication, pessoa_end_time, gave_up) -> phone_calls
+phone_calls
+```
+
+```{r}
+# phone_calls rate per replication
+phone_calls %>% 
+  group_by(replication) %>% 
+  summarise(phone_calls = n(), gave_up = sum(gave_up)) %>% 
+  mutate(phone_calls_per_hour = phone_calls/10, gave_up_rate = gave_up/phone_calls) %>% 
+  arrange(desc(gave_up_rate)) -> phone_calls_rate
+phone_calls_rate
+
+phone_calls_rate %>% 
+  ggplot(aes(x = reorder(replication, gave_up_rate), y = gave_up_rate)) +
+  geom_col() + 
+  ylim(0, 1) +
+  theme(axis.text.x = element_text(angle = 70, hjust = 1)) +
+  geom_hline(aes(yintercept = min(gave_up_rate)), linetype = "dashed", color = "red") +
+  geom_hline(aes(yintercept = max(gave_up_rate)), linetype = "dashed", color = "blue") +
+  xlab("Replication") + 
+  ylab("Gave up rate")
+```
+
+```{r}
+phone_calls_rate %>% 
+  summarise(
+    min = min(phone_calls_per_hour), 
+    mean = mean(phone_calls_per_hour), 
+    max = max(phone_calls_per_hour)
+    )
+```
+
+
+```{r}
+# evolucao ao longo do dia DO QUE?
+attributes.df2a %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+# get queue size histogram
+resources %>% 
+  mutate(day = ceiling(time/(24*60))) %>% 
+  group_by(replication) %>%
+  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  mutate(replication = replication %>% as_factor()) %>% 
+  ggplot(aes(x = time, y = queue_size)) +
+  geom_step(aes(color = replication), alpha = 0.3) + 
+  geom_smooth(method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none")
+
+resources %>% 
+  mutate(day = ceiling(time/(24*60))) %>% 
+  group_by(replication) %>%
+  reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+  mutate(replication = replication %>% as_factor()) %>% 
+  ggplot(aes(x = time, y = queue_size)) +
+  geom_step(aes(color = replication), alpha = 0.3) + 
+  geom_smooth(method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  ylim(0,250)
+  
+```
+
+
+```{r}
+# join these 2 plots
+attributes.df2a %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  geom_step(data = resources %>% 
+              mutate(day = ceiling(time/(24*60))) %>% 
+              group_by(replication) %>%
+              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              mutate(replication = replication %>% as_factor()), 
+            aes(x = time, y = queue_size), alpha = 0.3) + 
+  geom_smooth(data = resources %>% 
+                mutate(day = ceiling(time/(24*60))) %>% 
+                group_by(replication) %>%
+                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                mutate(replication = replication %>% as_factor()), 
+              aes(x = time, y = queue_size), method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  ylim(0,875)
+  
+attributes.df2a %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none") +
+  geom_step(data = resources %>% 
+              mutate(day = ceiling(time/(24*60))) %>% 
+              group_by(replication) %>%
+              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              mutate(replication = replication %>% as_factor()), 
+            aes(x = time, y = queue_size), alpha = 0.3) + 
+  geom_smooth(data = resources %>% 
+                mutate(day = ceiling(time/(24*60))) %>% 
+                group_by(replication) %>%
+                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                mutate(replication = replication %>% as_factor()), 
+              aes(x = time, y = queue_size), method="lm") +
+  facet_wrap(vars(day), scale = "free") +
+  theme(legend.position = "none")
+
+
+attributes.df2a %>% 
+  filter(key == "phone_rejected") %>% 
+  mutate(day = day %>% as_factor(), replication = replication %>% as_factor) %>% 
+  group_by(replication) %>% 
+  reframe(time_rejected = pessoa_end_time, sumcum_per_day = cumsum(value), day = day) %>% 
+  ggplot(aes(x = time_rejected %>% as.integer(), y = sumcum_per_day)) +
+  geom_line(aes(color = replication), alpha = 0.3) +
+  geom_smooth() +
+
+  theme(legend.position = "none") +
+  geom_step(data = resources %>% 
+              mutate(day = ceiling(time/(24*60))) %>% 
+              group_by(replication) %>%
+              reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+              mutate(replication = replication %>% as_factor()), 
+            aes(x = time, y = queue_size), alpha = 0.3) + 
+  geom_smooth(data = resources %>% 
+                mutate(day = ceiling(time/(24*60))) %>% 
+                group_by(replication) %>%
+                reframe(day = day %>% as_factor(), time = time, queue_size = queue) %>% 
+                mutate(replication = replication %>% as_factor()), 
+              aes(x = time, y = queue_size), method="lm") +
+
+  theme(legend.position = "none")
+```
+
+```{r}
+# tempo de espera daqueles que concluiram, speardao por chamada e mensagem
+attributes %>% 
+  filter(key == "atendido") %>% 
+  left_join(arrivals.df2a %>% select(start_time, name, replication), join_by("name", "replication")) %>% 
+  left_join(contactos.df2a, join_by("name", "replication")) %>% 
+  mutate(time_waiting = time - start_time) %>% 
+  select(name, value, replication, time_waiting, contacto) -> waiting_times
+waiting_times
+```
+
+
+```{r}
+# histograma (n tou a perceber pq é q há waiting times maiores que 5)
+waiting_times %>% 
+  filter(contacto == "telefone") %>%
+  ggplot(aes(x = time_waiting)) +
+  geom_histogram(bins = 100) +
+  theme(legend.position = "none")
+
+waiting_times %>% 
+  filter(contacto == "app") %>%
+  ggplot(aes(x = time_waiting)) +
+  geom_histogram(bins = 100) +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+# regular waiting time stats without graphs
+waiting_times %>% 
+  group_by(contacto) %>% 
+  summarise(mean = mean(time_waiting), sd = sd(time_waiting), median = median(time_waiting)) 
+waiting_times %>% 
+  group_by(contacto) %>% 
+  summarise(quantile_10 = quantile(time_waiting, 0.1), quantile_20 = quantile(time_waiting, 0.2), quantile_30 = quantile(time_waiting, 0.3), quantile_40 = quantile(time_waiting, 0.4), quantile_50 = quantile(time_waiting, 0.5), quantile_60 = quantile(time_waiting, 0.6), quantile_70 = quantile(time_waiting, 0.7), quantile_80 = quantile(time_waiting, 0.8), quantile_90 = quantile(time_waiting, 0.9), quantile_95 = quantile(time_waiting, 0.95), quantile_99 = quantile(time_waiting, 0.99))
+```
+
+
+```{r}
+resources %>% plot(metric = "utilization")
+resources %>% plot(metric = "usage", steps = T)
+```
