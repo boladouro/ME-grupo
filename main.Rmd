@@ -236,8 +236,6 @@ phone_calls_rate %>%
   geom_hline(aes(yintercept = max(gave_up_rate)), linetype = "dashed", color = "blue") +
   xlab("Replication") + 
   ylab("Gave up rate")
-
-ggsave("gave_up_rate.svg")
 ```
 
 ```{r}
@@ -523,7 +521,6 @@ phone_calls_rate %>%
   xlab("Replication") + 
   ylab("Gave up rate")
 
-ggsave("gave_up_rate.svg")
 ```
 
 ```{r}
@@ -630,7 +627,11 @@ attributes.df2b %>%
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  ggtitle("Tamanho da fila e chamadas rejeitadas 2b) por dia") +
+  xlab("Tempo de simulação (horas)") + 
+  ylab("Número de chamadas rejeitadas")
+
 
 
 attributes.df2b %>% 
@@ -655,8 +656,11 @@ attributes.df2b %>%
                 reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
+  theme(legend.position = "none") +
+  ggtitle("Tamanho da fila e chamadas rejeitadas 2b) nos 5 dias") +
+  xlab("Tempo de simulação (horas)") + 
+  ylab("Número de chamadas rejeitadas")
 
-  theme(legend.position = "none")
 ```
 
 ```{r}
@@ -918,7 +922,11 @@ attributes.df2a %>%
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
   facet_wrap(vars(day), scale = "free") +
-  theme(legend.position = "none")
+  theme(legend.position = "none") +
+  ggtitle("Tamanho da fila e chamadas rejeitadas 2a) por dia") +
+  xlab("Tempo de simulação (horas)") + 
+  ylab("Número de chamadas rejeitadas")
+
 
 
 attributes.df2a %>% 
@@ -943,8 +951,11 @@ attributes.df2a %>%
                 reframe(day = day %>% as_factor(), time = time/60, queue_size = queue) %>% 
                 mutate(replication = replication %>% as_factor()), 
               aes(x = time, y = queue_size), method="lm") +
+  theme(legend.position = "none") +
+  ggtitle("Tamanho da fila e chamadas rejeitadas 2a) nos 5 dias") +
+  xlab("Tempo de simulação (horas)") + 
+  ylab("Número de chamadas rejeitadas")
 
-  theme(legend.position = "none")
 ```
 
 ```{r}
