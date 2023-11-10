@@ -20,8 +20,8 @@ options(
 )
 
 tryCatch({
-  here::i_am("README.md")
-  library(here)
+  # here::i_am("README.md")
+  # library(here)
   library(tidyverse)
   library(conflicted)
   library(pak)

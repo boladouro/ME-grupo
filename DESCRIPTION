@@ -22,10 +22,8 @@ Depends:
 Encoding: UTF-8
 Imports: 
     tidyverse (== 2.0.0),
-    here (== 1.0.1),
     conflicted (== 1.2.0),
     simmer (== 4.4.6.2),
-    simmer.bricks (== 0.2.2),
     simmer.plot (== 0.1.18),
     pkgcache (== 2.2.0.1),
     pkgdepends (== 0.6.0),
